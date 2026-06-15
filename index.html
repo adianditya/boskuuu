@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DINNER QUEST 🎮</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;image-rendering:pixelated}
+body{
+  min-height:100vh;background:#1a0a2e;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Press Start 2P',monospace;padding:1rem;overflow:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,100,200,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,100,200,0.03) 1px,transparent 1px);
+  background-size:16px 16px;pointer-events:none;
+}
+.star{position:fixed;background:#fff;animation:twinkle 2s ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:0.2}100%{opacity:0.9}}
+
+/* corgi SVG floaters */
+.corgi-float{
+  position:fixed;pointer-events:none;opacity:0.13;
+  animation:corgiDrift linear infinite;
+}
+@keyframes corgiDrift{
+  0%{transform:translateY(0) scaleX(1)}
+  49%{transform:translateY(-12px) scaleX(1)}
+  50%{transform:translateY(-12px) scaleX(-1)}
+  99%{transform:translateY(0) scaleX(-1)}
+  100%{transform:translateY(0) scaleX(1)}
+}
+
+.gameboy{
+  background:#2d1b4e;border:4px solid #ff64c8;
+  box-shadow:0 0 0 2px #1a0a2e,0 0 0 4px #ff64c8,0 0 24px rgba(255,100,200,0.3),inset 0 0 20px rgba(0,0,0,0.3);
+  max-width:380px;width:100%;padding:0;position:relative;z-index:1;
+}
+.screen-bezel{
+  background:#1a0a2e;margin:1.5rem 1.5rem 0.8rem;
+  border:3px solid #ff64c8;
+  box-shadow:inset 0 0 12px rgba(0,0,0,0.8),0 0 8px rgba(255,100,200,0.2);
+  min-height:300px;position:relative;overflow:hidden;
+}
+.screen-inner{padding:1rem 0.75rem;min-height:300px;display:flex;flex-direction:column;justify-content:center;}
+.screen-bezel::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.08) 0px,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 3px);
+  pointer-events:none;z-index:10;
+}
+.game-title{font-size:0.45rem;color:#ff64c8;text-align:center;margin-bottom:0.8rem;line-height:1.8;text-shadow:0 0 8px rgba(255,100,200,0.8);animation:glow 1.5s ease-in-out infinite alternate;}
+@keyframes glow{0%{text-shadow:0 0 6px rgba(255,100,200,0.6)}100%{text-shadow:0 0 14px rgba(255,100,200,1),0 0 20px rgba(255,100,200,0.4)}}
+.char-pixel{font-size:2.8rem;text-align:center;display:block;margin:0.3rem 0;animation:charBob 1s steps(2) infinite}
+@keyframes charBob{0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+.dialog-box{background:#0d0820;border:2px solid #ff64c8;padding:0.6rem 0.75rem;margin-top:0.4rem;position:relative;}
+.dialog-box::before{content:'▼';position:absolute;bottom:4px;right:6px;color:#ff64c8;font-size:0.4rem;animation:blink 0.8s steps(1) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.dialog-text{font-size:0.38rem;color:#e8d5ff;line-height:1.9;letter-spacing:0.02em}
+.dialog-text .em{color:#ff64c8}
+.mood-text{font-size:0.32rem;color:#aaa;text-align:center;margin:0.35rem 0;min-height:0.8rem}
+
+/* menu */
+.menu{list-style:none;margin-top:0.5rem}
+.menu-item{
+  font-size:0.36rem;color:#e8d5ff;padding:0.4rem 0.5rem;
+  cursor:pointer;border:1px solid transparent;
+  display:flex;align-items:flex-start;gap:0.4rem;line-height:1.5;
+}
+.menu-item:hover,.menu-item:focus{color:#ff64c8;border-color:#ff64c8;background:rgba(255,100,200,0.08)}
+.menu-item:hover::before{content:'►';color:#ff64c8}
+.menu-item::before{content:'　';display:inline-block;width:0.6rem;flex-shrink:0}
+
+/* escape card — inline in menu, initially hidden, shown via JS as fixed */
+.menu-item.escape{
+  color:#888;border:1px dashed #555;cursor:default;
+  position:fixed;z-index:50;background:#0d0820;
+  width:230px;font-family:'Press Start 2P',monospace;
+  font-size:0.36rem;padding:0.4rem 0.5rem;
+  display:none;align-items:flex-start;gap:0.4rem;line-height:1.5;
+}
+.menu-item.escape.visible{display:flex}
+
+.hp-row{display:flex;align-items:center;gap:0.4rem;margin:0.3rem 0}
+.hp-label{font-size:0.3rem;color:#ff64c8;white-space:nowrap}
+.hp-bar{flex:1;height:6px;background:#1a0a2e;border:1px solid #ff64c8}
+.hp-fill{height:100%;background:linear-gradient(90deg,#ff64c8,#a855f7);transition:width 0.4s}
+
+.back-btn{
+  font-family:'Press Start 2P',monospace;font-size:0.32rem;
+  background:transparent;color:#888;border:1px solid #555;
+  padding:0.3rem 0.6rem;cursor:pointer;margin-bottom:0.4rem;display:inline-block;
+}
+.back-btn:hover{color:#ff64c8;border-color:#ff64c8}
+
+.controls{padding:0.8rem 1.5rem 1.2rem;display:flex;justify-content:center}
+.btn-pixel{
+  font-family:'Press Start 2P',monospace;font-size:0.45rem;padding:0.5rem 1rem;
+  border:2px solid;cursor:pointer;position:relative;transition:all 0.08s;line-height:1.4;
+}
+.btn-pixel.yes{background:#22863a;color:#fff;border-color:#22863a;box-shadow:0 4px 0 #145a23}
+.btn-pixel.yes:hover{transform:translateY(-2px);box-shadow:0 6px 0 #145a23}
+.btn-pixel.yes:active{transform:translateY(3px);box-shadow:0 1px 0 #145a23}
+.btn-pixel.no{background:#c0185c;color:#fff;border-color:#c0185c;box-shadow:0 3px 0 #8b0a38;line-height:1.4;text-align:center;}
+.btn-pixel.no.floating{position:fixed;z-index:20;}
+
+.pill{display:inline-block;background:rgba(255,100,200,0.15);border:1px solid rgba(255,100,200,0.4);color:#ff64c8;font-size:0.3rem;padding:3px 6px;margin:2px}
+
+/* date/time inputs — styled to look clickable & match theme */
+.time-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin:0.4rem 0}
+.time-field{display:flex;flex-direction:column;gap:0.2rem}
+.time-label{font-size:0.28rem;color:#ff64c8;margin-bottom:0.1rem}
+.px-input{
+  width:100%;background:#0d0820;border:2px solid #ff64c8;
+  color:#e8d5ff;font-family:'Press Start 2P',monospace;font-size:0.35rem;
+  padding:0.45rem 0.4rem;outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+}
+.px-input:focus{border-color:#a855f7;background:#120a2a}
+.px-input::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1) saturate(5) hue-rotate(280deg);cursor:pointer;opacity:0.8}
+.px-btn{font-family:'Press Start 2P',monospace;font-size:0.35rem;background:#ff64c8;color:#1a0a2e;border:none;padding:0.45rem 0.8rem;cursor:pointer;margin-top:0.4rem;width:100%}
+.px-btn:hover{background:#a855f7}
+.saved-ok{font-size:0.32rem;color:#63d471;margin-top:0.4rem;display:none}
+.err-msg{font-size:0.28rem;color:#e03535;margin-top:0.2rem;display:none}
+
+.screen-tag{font-size:0.28rem;color:#555;text-align:right;margin:0 1.5rem 0.3rem;letter-spacing:0.05em}
+.s{display:none}.s.active{display:block}
+
+.confetti-piece{position:fixed;animation:confFall linear forwards;pointer-events:none;z-index:200}
+@keyframes confFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+.tooltip{
+  position:fixed;z-index:999;background:#ff64c8;color:#1a0a2e;
+  font-family:'Press Start 2P',monospace;font-size:0.32rem;
+  padding:6px 10px;pointer-events:none;white-space:nowrap;
+  opacity:0;visibility:hidden;transition:opacity 0.1s;
+}
+.tooltip.show{opacity:1;visibility:visible}
+</style>
+</head>
+<body>
+<div class="tooltip" id="tip"></div>
+
+<!-- Corgi pixel SVGs — decorative background -->
+<svg class="corgi-float" style="width:90px;left:4%;top:15%;animation-duration:6s;animation-delay:0s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- corgi pixel body -->
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/><!-- left ear base -->
+  <rect x="1" y="2" width="2" height="3" fill="white"/><!-- left ear -->
+  <rect x="12" y="4" width="2" height="2" fill="white"/><!-- right ear base -->
+  <rect x="13" y="2" width="2" height="3" fill="white"/><!-- right ear -->
+  <rect x="3" y="3" width="8" height="3" fill="white"/><!-- head -->
+  <rect x="4" y="9" width="2" height="2" fill="white"/><!-- front left leg -->
+  <rect x="7" y="9" width="2" height="2" fill="white"/><!-- front right leg -->
+  <rect x="10" y="9" width="2" height="2" fill="white"/><!-- back left leg -->
+  <rect x="13" y="7" width="2" height="2" fill="white"/><!-- butt/tail -->
+  <rect x="15" y="6" width="2" height="1" fill="white"/><!-- tail -->
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/><!-- left eye -->
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/><!-- right eye -->
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/><!-- nose -->
+</svg>
+
+<svg class="corgi-float" style="width:70px;right:5%;top:60%;animation-duration:8s;animation-delay:2s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/>
+  <rect x="1" y="2" width="2" height="3" fill="white"/>
+  <rect x="12" y="4" width="2" height="2" fill="white"/>
+  <rect x="13" y="2" width="2" height="3" fill="white"/>
+  <rect x="3" y="3" width="8" height="3" fill="white"/>
+  <rect x="4" y="9" width="2" height="2" fill="white"/>
+  <rect x="7" y="9" width="2" height="2" fill="white"/>
+  <rect x="10" y="9" width="2" height="2" fill="white"/>
+  <rect x="13" y="7" width="2" height="2" fill="white"/>
+  <rect x="15" y="6" width="2" height="1" fill="white"/>
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/>
+</svg>
+
+<svg class="corgi-float" style="width:55px;left:3%;bottom:18%;animation-duration:9s;animation-delay:4s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/>
+  <rect x="1" y="2" width="2" height="3" fill="white"/>
+  <rect x="12" y="4" width="2" height="2" fill="white"/>
+  <rect x="13" y="2" width="2" height="3" fill="white"/>
+  <rect x="3" y="3" width="8" height="3" fill="white"/>
+  <rect x="4" y="9" width="2" height="2" fill="white"/>
+  <rect x="7" y="9" width="2" height="2" fill="white"/>
+  <rect x="10" y="9" width="2" height="2" fill="white"/>
+  <rect x="13" y="7" width="2" height="2" fill="white"/>
+  <rect x="15" y="6" width="2" height="1" fill="white"/>
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/>
+</svg>
+
+<svg class="corgi-float" style="width:80px;right:3%;top:10%;animation-duration:7s;animation-delay:1s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/>
+  <rect x="1" y="2" width="2" height="3" fill="white"/>
+  <rect x="12" y="4" width="2" height="2" fill="white"/>
+  <rect x="13" y="2" width="2" height="3" fill="white"/>
+  <rect x="3" y="3" width="8" height="3" fill="white"/>
+  <rect x="4" y="9" width="2" height="2" fill="white"/>
+  <rect x="7" y="9" width="2" height="2" fill="white"/>
+  <rect x="10" y="9" width="2" height="2" fill="white"/>
+  <rect x="13" y="7" width="2" height="2" fill="white"/>
+  <rect x="15" y="6" width="2" height="1" fill="white"/>
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/>
+</svg>
+
+<svg class="corgi-float" style="width:65px;left:6%;top:45%;animation-duration:10s;animation-delay:3s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/>
+  <rect x="1" y="2" width="2" height="3" fill="white"/>
+  <rect x="12" y="4" width="2" height="2" fill="white"/>
+  <rect x="13" y="2" width="2" height="3" fill="white"/>
+  <rect x="3" y="3" width="8" height="3" fill="white"/>
+  <rect x="4" y="9" width="2" height="2" fill="white"/>
+  <rect x="7" y="9" width="2" height="2" fill="white"/>
+  <rect x="10" y="9" width="2" height="2" fill="white"/>
+  <rect x="13" y="7" width="2" height="2" fill="white"/>
+  <rect x="15" y="6" width="2" height="1" fill="white"/>
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/>
+</svg>
+
+<svg class="corgi-float" style="width:50px;right:7%;bottom:12%;animation-duration:11s;animation-delay:5s" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="5" width="10" height="5" fill="white"/>
+  <rect x="2" y="4" width="2" height="2" fill="white"/>
+  <rect x="1" y="2" width="2" height="3" fill="white"/>
+  <rect x="12" y="4" width="2" height="2" fill="white"/>
+  <rect x="13" y="2" width="2" height="3" fill="white"/>
+  <rect x="3" y="3" width="8" height="3" fill="white"/>
+  <rect x="4" y="9" width="2" height="2" fill="white"/>
+  <rect x="7" y="9" width="2" height="2" fill="white"/>
+  <rect x="10" y="9" width="2" height="2" fill="white"/>
+  <rect x="13" y="7" width="2" height="2" fill="white"/>
+  <rect x="15" y="6" width="2" height="1" fill="white"/>
+  <rect x="5" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="8" y="4" width="1" height="1" fill="#1a0a2e"/>
+  <rect x="6" y="5" width="2" height="1" fill="#1a0a2e"/>
+</svg>
+
+<div class="gameboy">
+  <div class="screen-tag">DINNER QUEST v1.0</div>
+  <div class="screen-bezel">
+    <div class="screen-inner">
+
+      <!-- S1 -->
+      <div class="s active" id="s1">
+        <div class="game-title">✦ DINNER QUEST ✦<br>★ BOSS STAGE ★</div>
+        <div class="char-pixel" id="s1char">🐶</div>
+        <div class="dialog-box">
+          <div class="dialog-text">Ibu Bos yang kami hormati,<br><span class="em">apakah penawaran traktirannya<br>masih berlaku?</span></div>
+        </div>
+        <div class="mood-text" id="s1mood">[ kami menunggu... ]</div>
+        <div class="hp-row">
+          <span class="hp-label">HARAP</span>
+          <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <!-- S2 -->
+      <div class="s" id="s2">
+        <button class="back-btn" onclick="goBack('s1')">◄ BACK</button>
+        <div class="char-pixel">😭</div>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em">jadinya ini dalam rangka apa?</span><br><span style="font-size:0.3rem;color:#888">nentuin siapa yang diajak</span></div>
+        </div>
+        <ul class="menu">
+          <li class="menu-item" onclick="s2Pick('ai')">🏆 AI Competition<br><span style="font-size:0.28rem;color:#888;padding-left:0.6rem">Spv, Project, Support</span></li>
+          <li class="menu-item" onclick="s2Pick('farewell')">🥹 Farewell Kak Iona<br><span style="font-size:0.28rem;color:#888;padding-left:0.6rem">Spv &amp; Project</span></li>
+          <li class="menu-item" onclick="s2Pick('both')">🎊 Dua-duanya!<br><span style="font-size:0.28rem;color:#888;padding-left:0.6rem">Se-komplek wkwk</span></li>
+        </ul>
+      </div>
+
+      <!-- S3 -->
+      <div class="s" id="s3">
+        <button class="back-btn" onclick="goBack('s2')">◄ BACK</button>
+        <div id="bothNote" style="display:none;font-size:0.28rem;color:#ff64c8;margin-bottom:0.4rem;line-height:1.6">harusnya dipisah ya HEHEHE 😂</div>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em">[ KONFIRMASI WAKTU ]</span><br>Kamis 26 Juni · 19:00?</div>
+        </div>
+        <div style="margin:0.4rem 0" id="s3pills"></div>
+        <ul class="menu">
+          <li class="menu-item" onclick="s3Boleh()">✅ Boleh!</li>
+          <li class="menu-item" onclick="s3Ngga()">😬 Tidak bisa...</li>
+        </ul>
+      </div>
+
+      <!-- S3b -->
+      <div class="s" id="s3b">
+        <button class="back-btn" onclick="goBack('s3')">◄ BACK</button>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em">[ JADWAL ALTERNATIF ]</span><br>Kapan Kak Iona bisa?</div>
+        </div>
+        <div class="time-grid">
+          <div class="time-field">
+            <div class="time-label">📅 Tanggal</div>
+            <input type="date" class="px-input" id="altTanggal">
+          </div>
+          <div class="time-field">
+            <div class="time-label">🕖 Jam</div>
+            <input type="time" class="px-input" id="altJam">
+          </div>
+        </div>
+        <div class="err-msg" id="errMsg">* pilih tanggal &amp; jam dulu ya!</div>
+        <button class="px-btn" onclick="s3bSubmit()">KIRIM ►</button>
+        <div class="saved-ok" id="s3bOk">✓ SAVED!</div>
+      </div>
+
+      <!-- S4 -->
+      <div class="s" id="s4">
+        <button class="back-btn" onclick="goBack('s3')">◄ BACK</button>
+        <div style="margin-bottom:0.3rem" id="s4pills"></div>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em">[ PILIH LOKASI ]</span></div>
+        </div>
+        <ul class="menu" id="s4menu">
+          <li class="menu-item" onclick="s4Pick('nikusei')">🥩 Nikusei Trinity<br><span style="font-size:0.28rem;color:#888;padding-left:0.6rem">GF Trinity Tower · deket kantor</span></li>
+          <li class="menu-item" onclick="s4Pick('kintan')">🔥 Kintan Lotte<br><span style="font-size:0.28rem;color:#888;padding-left:0.6rem">Lotte Shopping Ave · jauh dari kantor</span></li>
+          <!-- Tahu Go slot — visually inline, but becomes fixed when JS runs -->
+          <li class="menu-item escape" id="escCard">🧆 Tahu Go / Pujas<br><span style="font-size:0.28rem;color:#555;padding-left:0.6rem">pilihan sangat...... sangat......</span></li>
+        </ul>
+        <div class="mood-text" id="s4hint">[ ada pilihan tersembunyi... ]</div>
+      </div>
+
+      <!-- S4b -->
+      <div class="s" id="s4b">
+        <button class="back-btn" onclick="goBack('s4')">◄ BACK</button>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em">[ YAUDAH... ]</span><br>Kak Iona maunya di mana?</div>
+        </div>
+        <ul class="menu">
+          <li class="menu-item" onclick="s4Pick('nikusei')">🥩 Nikusei Trinity</li>
+          <li class="menu-item" onclick="s4Pick('kintan')">🔥 Kintan Lotte</li>
+        </ul>
+        <div style="margin-top:0.4rem">
+          <div style="font-size:0.28rem;color:#888;margin-bottom:0.3rem;line-height:1.6">atau isi sendiri juga boleh:</div>
+          <input class="px-input" id="freeText" placeholder="terserah kak tp pengen daging 🥩">
+          <button class="px-btn" onclick="s4bFreeSubmit()">KIRIM ►</button>
+          <div class="saved-ok" id="s4bOk">✓ NOTED!</div>
+        </div>
+      </div>
+
+      <!-- S5 -->
+      <div class="s" id="s5">
+        <div class="char-pixel">🥹</div>
+        <div class="dialog-box">
+          <div class="dialog-text"><span class="em" id="s5title"></span></div>
+        </div>
+        <div style="margin:0.4rem 0" id="s5pills"></div>
+        <div class="dialog-text" style="text-align:center;font-size:0.32rem;color:#aaa;margin-top:0.5rem;line-height:1.9">
+          Makasih Kak! nanti dikabarin<br>lagi ya sama Icantik 🥹
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="controls" id="controlsArea" style="gap:0.8rem">
+    <button class="btn-pixel yes" id="btnYes" onclick="s1Yes()">▶ YA!</button>
+    <button class="btn-pixel no" id="btnNo" onmouseenter="noRun()" ontouchstart="noRun(event)">✗ ENGGA</button>
+  </div>
+</div>
+
+<script>
+let noCount=0,rangka='',waktu={tanggal:'Kamis, 26 Juni',jam:'19:00'};
+const rangkaDesc={ai:'Spv, Project, Support',farewell:'Spv & Project',both:'Se-komplek!'};
+
+const noNotes=[
+  'eh jangan...',
+  'Kak Iona... 😢',
+  'kami udah kerja keras lho',
+  'tega banget sih Kak...',
+  'ini gabsa diklik btw',
+];
+const noMoods=[
+  '[ kami menunggu... ]',
+  '[ eh masa engga sih... ]',
+  '[ kak iona tegaaa ]',
+  '[ kami udah kerja keras... ]',
+  '[ tega banget kak... ]',
+  '[ Kakak tega... itu gabsa diklik btw ]',
+];
+const escMsgs=[
+  'Kak jangan dong...',
+  'Masa iya sih Kak',
+  'Ini farewell lho Kak 🥹',
+  'Kak Iona tegaaa',
+  'Kami sedih banget',
+  'Tolong Kak... please 🙏',
+  'Udah 7x... please',
+  'Ini terakhir ya Kak...',
+];
+const FINAL_ESC='ini gabsa diklik btw Kak 😭';
+
+// stars
+for(let i=0;i<30;i++){
+  const s=document.createElement('div');s.className='star';
+  s.style.cssText=`left:${Math.random()*100}vw;top:${Math.random()*100}vh;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;animation-delay:${Math.random()*2}s;animation-duration:${1+Math.random()*2}s`;
+  document.body.appendChild(s);
+}
+
+function show(id){
+  document.querySelectorAll('.s').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goBack(targetId){
+  hideEsc();
+  show(targetId);
+  if(targetId==='s1'){
+    btnNo.classList.remove('floating');
+    btnNo.style.cssText='';
+    btnNo.style.display='';
+    noIsFloating=false;
+    document.getElementById('controlsArea').style.display='flex';
+  }
+}
+
+// S1
+const btnNo=document.getElementById('btnNo');
+const btnYes=document.getElementById('btnYes');
+const s1char=document.getElementById('s1char');
+const s1mood=document.getElementById('s1mood');
+const hpFill=document.getElementById('hpFill');
+
+// No btn starts inline — goes floating after first hover
+let noIsFloating=false;
+function makeNoFloat(){
+  if(noIsFloating)return;
+  noIsFloating=true;
+  const rect=btnNo.getBoundingClientRect();
+  btnNo.classList.add('floating');
+  btnNo.style.left=rect.left+'px';
+  btnNo.style.top=rect.top+'px';
+  btnNo.style.width=rect.width+'px';
+}
+
+function noRun(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  makeNoFloat();
+  const bw=btnNo.offsetWidth||100,bh=btnNo.offsetHeight||44,mg=20;
+  btnNo.style.left=(mg+Math.random()*Math.max(0,window.innerWidth-bw-mg*2))+'px';
+  btnNo.style.top=(mg+Math.random()*Math.max(0,window.innerHeight-bh-mg*2))+'px';
+  const shrink=Math.max(0.6,1-noCount*0.09),grow=Math.min(1.7,1+noCount*0.12);
+  btnNo.style.fontSize=(0.45*shrink)+'rem';
+  btnYes.style.transform=`scale(${grow})`;
+  s1char.textContent=noCount>=5?'💀':noCount>=4?'🫠':noCount>=2?'😭':noCount>=1?'🐕':'🐶';
+  s1mood.textContent=noMoods[Math.min(noCount,noMoods.length-1)];
+  hpFill.style.width=Math.max(5,100-noCount*18)+'%';
+  noCount++;
+}
+function s1Yes(){
+  launchConfetti();
+  btnNo.style.display='none';
+  document.getElementById('controlsArea').style.display='none';
+  show('s2');
+}
+
+// S2
+function s2Pick(type){
+  rangka=type;
+  document.getElementById('s3pills').innerHTML=
+    `<span class="pill">📅 Kamis 26 Jun</span><span class="pill">🕖 19:00</span><span class="pill">👥 ${rangkaDesc[type]}</span>`;
+  document.getElementById('bothNote').style.display=type==='both'?'block':'none';
+  document.getElementById('s4pills').innerHTML=
+    `<span class="pill">📅 ${waktu.tanggal}</span><span class="pill">🕖 ${waktu.jam}</span><span class="pill">👥 ${rangkaDesc[type]}</span>`;
+  show('s3');
+}
+
+// S3
+function s3Boleh(){launchConfetti();show('s4');initEsc();}
+function s3Ngga(){show('s3b');}
+function s3bSubmit(){
+  const tgl=document.getElementById('altTanggal').value;
+  const jam=document.getElementById('altJam').value;
+  const err=document.getElementById('errMsg');
+  if(!tgl||!jam){err.style.display='block';return;}
+  err.style.display='none';
+  const d=new Date(tgl);
+  if(isNaN(d.getTime())){err.style.display='block';return;}
+  waktu.tanggal=d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  waktu.jam=jam;
+  document.getElementById('s4pills').innerHTML=
+    `<span class="pill">📅 ${waktu.tanggal}</span><span class="pill">🕖 ${jam}</span><span class="pill">👥 ${rangkaDesc[rangka]}</span>`;
+  document.getElementById('s3bOk').style.display='block';
+  setTimeout(()=>{show('s4');initEsc();},1000);
+}
+
+// S4 — Tahu Go card: inline in menu, goes fixed on hover
+const escEl=document.getElementById('escCard');
+let escCount=0,escFixed=false;
+
+function initEsc(){
+  escCount=0;escFixed=false;
+  // reset to inline position inside menu
+  escEl.style.position='';
+  escEl.style.left='';escEl.style.top='';escEl.style.width='';
+  escEl.classList.add('visible');
+  escEl.addEventListener('mouseenter',escRun);
+  escEl.addEventListener('touchstart',e=>{e.preventDefault();escRun(e);});
+}
+function hideEsc(){
+  escEl.classList.remove('visible');
+  escEl.style.position='';escEl.style.left='';escEl.style.top='';escEl.style.width='';
+  escFixed=false;escCount=0;
+}
+
+function escRun(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  if(escCount>=8){
+    showTip(e,FINAL_ESC,3000);
+    setTimeout(()=>{hideEsc();show('s4b');},1200);
+    return;
+  }
+  // first hover: snap to fixed
+  const cw=230,ch=50,mg=16;
+  const nx=mg+Math.random()*Math.max(0,window.innerWidth-cw-mg*2);
+  const ny=mg+Math.random()*Math.max(0,window.innerHeight-ch-mg*2);
+  escEl.style.position='fixed';
+  escEl.style.width=cw+'px';
+  escEl.style.left=nx+'px';
+  escEl.style.top=ny+'px';
+  showTip(e,escMsgs[Math.min(escCount,escMsgs.length-1)],2500);
+  escCount++;
+  if(escCount>=6)document.getElementById('s4hint').textContent='[ Kak tolong pilih yang lain 🙏 ]';
+}
+
+function s4Pick(p){hideEsc();showEnding(p);}
+function s4bFreeSubmit(){
+  const v=document.getElementById('freeText').value.trim();
+  if(!v)return;
+  document.getElementById('s4bOk').style.display='block';
+  const lower=v.toLowerCase();
+  const isPujas=/(pujas|gorengan|tahu\s*go|tahu go|warteg|warung|murah)/.test(lower);
+  setTimeout(()=>showEnding('free',v,isPujas),900);
+}
+
+const placeInfo={
+  nikusei:{name:'NIKUSEI TRINITY',loc:'GF Trinity Tower'},
+  kintan:{name:'KINTAN LOTTE',loc:'Lotte Shopping Ave'},
+};
+
+// ── Ganti dengan URL Apps Script kamu setelah deploy ──
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzO507uN-SOtNItKvoYs6C0t195KJEdCzNWHQM6_ft9o__Hdg79F7rGCnvvjghY-kNn/exec';
+
+function saveToSheet(payload){
+  if(!GAS_URL||GAS_URL.includes('GANTI'))return;
+  // pakai GET + query params karena GAS doPost kena CORS dari GitHub Pages
+  const params=new URLSearchParams({
+    rangka:  payload.rangka  ||'',
+    tanggal: payload.tanggal ||'',
+    jam:     payload.jam     ||'',
+    tempat:  payload.tempat  ||'',
+    catatan: payload.catatan ||'',
+  });
+  fetch(GAS_URL+'?'+params.toString(),{method:'GET',mode:'no-cors'})
+    .catch(()=>{});
+}
+
+function showEnding(place,fv,isPujas){
+  const t=document.getElementById('s5title'),p=document.getElementById('s5pills');
+
+  let tempatLabel='';
+  if(place==='free'){
+    if(isPujas){
+      t.textContent='...Kak Iona 😭';
+      tempatLabel='[pilihan mencurigakan] '+fv;
+    } else {
+      t.textContent='NOTED: '+fv;
+      tempatLabel=fv;
+    }
+    // insert noted note (cek dulu biar ga dobel)
+    if(!document.getElementById('notedNote')){
+      t.insertAdjacentHTML('afterend','<div id="notedNote" class="dialog-text" style="font-size:0.32rem;color:#888;margin-top:0.3rem;line-height:1.8">noted. kita cek dulu kelayakannya ya wkwk 😂</div>');
+    }
+  } else {
+    t.textContent=`${placeInfo[place].name} · ${placeInfo[place].loc}`;
+    tempatLabel=placeInfo[place].name;
+  }
+
+  p.innerHTML=`<span class="pill">📅 ${waktu.tanggal}</span><span class="pill">🕖 ${waktu.jam}</span><span class="pill">👥 ${rangkaDesc[rangka]}</span>`;
+
+  // kirim ke Google Sheets
+  saveToSheet({
+    rangka,
+    tanggal: waktu.tanggal,
+    jam: waktu.jam,
+    tempat: tempatLabel,
+    catatan: fv||'',
+  });
+
+  show('s5');launchConfetti();
+}
+
+// tooltip
+const tipEl=document.getElementById('tip');
+let tipTO=null;
+function showTip(e,msg,dur){
+  dur=dur||2500;
+  tipEl.textContent=msg;tipEl.classList.add('show');
+  const cx=(e&&e.clientX)||(e&&e.touches?.[0]?.clientX)||200;
+  const cy=(e&&e.clientY)||(e&&e.touches?.[0]?.clientY)||200;
+  tipEl.style.left=(cx+14)+'px';tipEl.style.top=(cy-30)+'px';
+  if(tipTO)clearTimeout(tipTO);
+  tipTO=setTimeout(()=>tipEl.classList.remove('show'),dur);
+}
+
+function launchConfetti(){
+  const c=['#ff64c8','#a855f7','#63d471','#fbbf24','#4ecdc4'];
+  for(let i=0;i<60;i++)setTimeout(()=>{
+    const d=document.createElement('div');d.className='confetti-piece';
+    d.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${c[i%c.length]};width:${5+Math.random()*7}px;height:${5+Math.random()*7}px;border-radius:${Math.random()>.5?'50%':'0'};animation-duration:${1.3+Math.random()*2}s;animation-delay:${Math.random()*.4}s`;
+    document.body.appendChild(d);setTimeout(()=>d.remove(),4000);
+  },i*30);
+}
+</script>
+</body>
+</html>
